@@ -25,27 +25,27 @@ Once it is running, **BC** will continuously send heartbeat data to **BS**.
 
 For example:
 
-    cmd-exfil-single.test.txt
+    cmd.exfil-single.test.txt
 
 will tell **BC** that it has received a command (cmd) to exfiltrate (exfil) the single file (single) test.txt (test.txt). 
 
 If a path must be specified, the command format can be changed:
 
-    cmd-exfil-path.home-dscully-test.txt
+    cmd.exfil-path.home-dscully-test.txt
 
 this tells **C** to use the path /home/dscully/test.txt for locating the file to be exfiltrated.
 
 This command format, though, exposes the server's intentions very quickly. For that purpose, **BC** can be modified prior to deployment to include explicit mappings between hardcoded command strings and custom-tailored strings that will be sent by the server. For instance,
 
-    cmd-exfil-path.home-dscully-test.txt
+    cmd.exfil-path.home-dscully-test.txt
 
 becomes
 
-    nginxplus-al-in.home-dscully-test.txt
+    nginxplus.al-in.home-dscully-test.txt
 
 Further specification can mask the targeted file(s):
 
-    nginxplus-al-in.1f96-lb-github.com
+    nginxplus.al-in.1f96-lb-github.com
 
 though this requires that you know the name and extension of the targeted file in advance. Client hardcodings cannot be changed without rebuilding the application client-side.
 
