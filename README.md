@@ -33,7 +33,7 @@ If a path must be specified, the command format can be changed:
 
     cmd.exfil-path.home-dscully-test.txt
 
-this tells **C** to use the path /home/dscully/test.txt for locating the file to be exfiltrated.
+this tells **BC** to use the path /home/dscully/test.txt for locating the file to be exfiltrated.
 
 This command format, though, exposes the server's intentions very quickly. For that purpose, **BC** can be modified prior to deployment to include explicit mappings between hardcoded command strings and custom-tailored strings that will be sent by the server. For instance,
 
