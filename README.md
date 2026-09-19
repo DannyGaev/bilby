@@ -10,7 +10,7 @@ Here, a JPEG is exfiltrated: the first three bytes of the file -- FF D8 FF -- ar
 ![Sending JPEG](jpeg.png)
 
 Hostnames returned from **BS** are used to communicate commands for **BC** to execute. bilby currently supports basic C2 commands:
-* ls command
+* bash commands
 * targeted data exfiltration
 
 bilby is able to send three bytes at a time while communicating with the server, and as such is not suited for exfiltrating large files quickly; smaller files and C2 commands are the best fit for this tool's usage.
@@ -60,3 +60,13 @@ On **BC**'s side, each section of the received 'command' hostname is broken down
 [3]		extension
 
 as such, each index is expected to hold certain values. This format must be followed for **BC** to function correctly.
+
+For bash command execution, command formatting is identical:
+
+    cmd.bash.rm-test
+
+will remove the file 'test'
+
+    cmd.bash.ls
+
+will return the output of the 'ls' command, and so on.
