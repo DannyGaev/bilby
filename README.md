@@ -1,5 +1,4 @@
-# bilby
-C2 Communication Via Reverse DNS Tunneling
+# C2 Communication Via Reverse DNS Tunneling
 
 bilby exploits the same system necessity for DNS abused by conventional DNS tunneling, but encodes data into the IP addresses themselves. For example, when exfiltrating files, the bilby client (**BC**) will take each byte of the target file and add a baseline value to it (communicated to the receiving server in advance) prior to sending it to the bilby server (**BS**), where **BS** reverses the operation to recover the original bytes.
 
@@ -65,8 +64,12 @@ For bash command execution, command formatting is identical:
 
     cmd.bash.rm-test
 
-will remove the file 'test'
+will remove the file 'test',
 
     cmd.bash.ls
 
-will return the output of the 'ls' command, and so on.
+will return the output of the 'ls' command,
+
+    cmd.bash.mkdir-test2
+
+will create the directory 'test2', and so on.
