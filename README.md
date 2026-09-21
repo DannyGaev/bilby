@@ -64,7 +64,7 @@ Bash Example:
 
     cmd-bash-cd.79-77-ls
 
-where 89 maps to '..', and 87 maps to ';'. The translated command here would be:
+where 79 maps to '..', and 77 maps to ';'. The translated command here would be:
 
     cd .. ; ls
 
