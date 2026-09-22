@@ -4,7 +4,11 @@ bilby exploits the same system necessity for DNS abused by conventional DNS tunn
 
 Some bytes become invalid when the baseline is added, as the new value exceeds 255. When this occurs, the value is wrapped back around to a valid byte value, and **BC** marks the transformation with an even value at the index of the wrapped byte. In doing so, the first octet becomes a 'key' that **BS** can use to decode the received values correctly, adjusting byte values as needed.
 
+## Notes on Using Bilby
+
 To avoid having to restart **BS** every time a different command has to be issued, **BS** will check a predefined file for the command it should send to **BC**'s heartbeat request. The default version of **BS** looks for a file named "hbt_command", though this can be changed. hbt_command can be edited while both **BS** and **BC** are running, though depending on the length of time between each **BC** heartbeat, it may end up executing half-typed commands.
+
+When a file is exfiltrated using bilby, the file outputted by **BS** is compressed, and can be uncompressed using the 7zip/7z utility. **BC** compresses the target file to minimize the amount of data being sent.
 
 ## File Exfiltration
 
