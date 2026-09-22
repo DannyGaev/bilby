@@ -4,15 +4,21 @@ bilby exploits the same system necessity for DNS abused by conventional DNS tunn
 
 Some bytes become invalid when the baseline is added, as the new value exceeds 255. When this occurs, the value is wrapped back around to a valid byte value, and **BC** marks the transformation with an even value at the index of the wrapped byte. In doing so, the first octet becomes a 'key' that **BS** can use to decode the received values correctly, adjusting byte values as needed.
 
+To avoid having to restart **BS** every time a different command has to be issued, **BS** will check a predefined file for the command it should send to **BC**'s heartbeat request. The default version of **BS** looks for a file named "hbt_command", though this can be changed. hbt_command can be edited while both **BS** and **BC** are running, though depending on the length of time between each **BC** heartbeat, it may end up executing half-typed commands.
+
+## File Exfiltration
+
 Here, a JPEG is exfiltrated: the first three bytes of the file -- FF D8 FF -- are prepared, wrapped, and sent to **BS**. Red denotes a wrapped value, while blue denotes an unwrapped value.
 
 ![Sending JPEG](jpeg.png)
+
+## C2 Communication
 
 Hostnames returned from **BS** are used to communicate commands for **BC** to execute. bilby currently supports basic C2 commands:
 * bash commands
 * targeted data exfiltration
 
-bilby is able to send three bytes at a time while communicating with the server, and as such is not suited for exfiltrating large files quickly; smaller files and C2 commands are the best fit for this tool's usage.
+**BC** is able to send three bytes at a time while communicating with **BS**, and as such is not suited for exfiltrating large files quickly; smaller files and C2 commands are the best fit for this tool's usage.
 
 Once it is running, **BC** will continuously send heartbeat data to **BS**. 
 
@@ -20,9 +26,12 @@ Once it is running, **BC** will continuously send heartbeat data to **BS**.
 
 **BS** may optionally reply with commands for **BC** to execute, but is not required to do so. Commands are specified in the following format:
 
-    cmd.[action]-[type].[filename-or-filepath].[extension]
+    Exfiltration:       cmd-exfil-[type].[filename-or-filepath].[extension]
+    C2 Communication:   cmd-bash-[binary's name].[binary's arguments]
 
-For example:
+## Exfiltration Format Examples
+
+For example, when exfiltrating a single file:
 
     cmd-exf-single.test.txt
 
@@ -48,6 +57,8 @@ Further specification can mask the targeted file(s):
 
 though this requires that you know the name and extension of the targeted file in advance. Client hardcodings cannot be changed without rebuilding the application client-side.
 
+## C2 Communication Examples
+
 On **BC**'s side, each section of the received 'command' hostname is broken down as follows:
 
 Sections are:
@@ -55,8 +66,6 @@ Sections are:
 [0]			cmd - (bash AND bash binary) OR cmd - exfil - single/path
 
 [1]			bash command argument(s) OR exfil file path
-
-Instructions for what the client should do can be written to a file that will be checked by **BS** before it replies to heartbeat commands. The default version of **BS** looks for a file named "hbt_command", though this can be changed. 
 
 Exfil Example:
 
