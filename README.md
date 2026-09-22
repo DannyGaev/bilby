@@ -31,6 +31,7 @@ Once it is running, **BC** will continuously send heartbeat data to **BS**.
 
 ## Exfiltration Format Examples
 
+
 For example, when exfiltrating a single file:
 
     cmd-exf-single.test.txt
@@ -63,21 +64,19 @@ On **BC**'s side, each section of the received 'command' hostname is broken down
 
 Sections are:
 
-[0]			cmd - (bash AND bash binary) OR cmd - exfil - single/path
+[0]			cmd - bash - bash binary
 
-[1]			bash command argument(s) OR exfil file path
-
-Exfil Example:
-
-    cmd-exf-single.test.txt
+[1]			bash command argument(s)
 
 Due to the restrictions of characters allowed in DNS PTR responses, not all bash commands can be typed in the native format. For that reason, mappings between symbols and strings allow **BC** to interpret incoming bash commands correctly without forcing **BS** to send the native commands:
+
+{"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/"}
 
 Bash Example:	
 
     cmd-bash-cd.79-77-ls
 
-where 79 maps to '..', and 77 maps to ';'. The translated command here would be:
+where 80 maps to '..', and 77 maps to ';'. The translated command here would be:
 
     cd .. ; ls
 
