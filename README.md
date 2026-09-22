@@ -51,8 +51,12 @@ though this requires that you know the name and extension of the targeted file i
 On **BC**'s side, each section of the received 'command' hostname is broken down as follows:
 
 Sections are:
+
 [0]			cmd - (bash AND bash binary) OR cmd - exfil - single/path
+
 [1]			bash command argument(s) OR exfil file path
+
+Instructions for what the client should do can be written to a file that will be checked by **BS** before it replies to heartbeat commands. The default version of **BS** looks for a file named "hbt_command", though this can be changed. 
 
 Exfil Example:
 
