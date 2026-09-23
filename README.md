@@ -72,11 +72,11 @@ Sections are:
 
 [1]			bash command argument(s)
 
-Due to the restrictions of characters allowed in DNS PTR responses, not all bash commands can be typed in the native format. For that reason, mappings between symbols and strings allow **BC** to interpret incoming bash commands correctly without forcing **BS** to send the native commands:
+Each section of the command is expected to hold certain values. This format must be followed for **BC** to function correctly. Due to the restrictions of characters allowed in DNS PTR responses, not all bash commands can be typed in the native format. For that reason, mappings between symbols and strings allow **BC** to interpret incoming bash commands correctly without forcing **BS** to send the native commands:
 
 {"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/"}
 
-Bash Example:	
+For instance, we can send the command:	
 
     cmd-bash-cd.79-77-ls
 
@@ -84,10 +84,8 @@ where 80 maps to '..', and 77 maps to ';'. The translated command here would be:
 
     cd .. ; ls
 
-Each section of the command is expected to hold certain values. This format must be followed for **BC** to function correctly.
-
-More examples:
-
-Echoing test into a file:
+If we want to echo "test" into a file, we would type:
 
     cmd-bash-echo.76test76-7575-echotest79txt
+
+Note that the command is formatted as "...test79txt" rather than "...test.txt".
