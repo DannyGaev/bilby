@@ -10,6 +10,8 @@ To avoid having to restart **BS** every time a different command has to be issue
 
 When a file is exfiltrated using bilby, the file outputted by **BS** is compressed, and can be uncompressed using the 7zip/7z utility. **BC** compresses the target file to minimize the amount of data being sent.
 
+Due to the lengthy mappings of characters used when translating bash commands to bilby-readable commands, bilby_cmd_interface can be used to input your bash command and have it automatically written to the hbt_command file used by **BS**. On account of this, bilby can be used without memorization of the character mappings; however, any custom mappings meant to further obfuscate communications between **BC** and **BS** must therefore be done by hand, and necessitate updating bilby_cmd_interface to ensure future translations remain accurate.
+
 ## File Exfiltration
 
 Here, a JPEG is exfiltrated: the first three bytes of the file -- FF D8 FF -- are prepared, wrapped, and sent to **BS**. Red denotes a wrapped value, while blue denotes an unwrapped value.
