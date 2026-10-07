@@ -80,7 +80,7 @@ Each section of the command is expected to hold certain values. This format must
 
 For instance, we can send the command:	
 
-    cmd-bash-cd.79-77-ls
+    cmd-bash-cd.80-77-ls
 
 where 80 maps to '..', and 77 maps to ';'. The translated command here would be:
 
