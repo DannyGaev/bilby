@@ -10,7 +10,7 @@ import (
 
 func main() {
 	in := bufio.NewReader(os.Stdin)
-	replacement_mappings := map[string]string{"..": "80", ".": "79", "|": "78", ";": "77", "'": "76", ">": "75", "/": "74", "-": "72"}
+	replacement_mappings := map[string]string{"..": "80", ".": "79", "|": "78", ";": "77", "'": "76", ">": "75", "/": "74", "-": "73"}
 	for true {
 		fmt.Printf("[?] bash command [b] or exfiltration command [e]: ")
 		command_type, _ := in.ReadString('\n')
@@ -29,10 +29,17 @@ func main() {
 				}
 			}
 			args_and_cont = strings.Replace(args_and_cont, " ", "-", -1)
-			hbt_command := fmt.Sprintf("cmd-bash-%v.%v", primary_command, args_and_cont)
-			fmt.Printf("[!] Writing formatted command to the file 'hbt_command': %v\n", hbt_command)
 
+			hbt_command := fmt.Sprintf("cmd-bash-%v.%v", primary_command, args_and_cont)
+			hbt_command = strings.TrimRight(hbt_command, "\r\n")
 			hbtc := []byte(hbt_command)
+
+			// First wipe the file's contents
+			if err := os.Truncate("hbt_command", 0); err != nil {
+				log.Printf("Failed to truncate: %v", err)
+			}
+
+			// Then add the new command to it
 			f, _ := os.OpenFile("hbt_command", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if _, err := f.Write(hbtc); err != nil {
 				log.Fatal(err)
@@ -41,6 +48,8 @@ func main() {
 			if err := f.Close(); err != nil {
 				log.Fatal(err)
 			}
+
+			fmt.Printf("[!] Wrote '%v' command to the file 'hbt_command'\n", hbt_command)
 		}
 	}
 }
