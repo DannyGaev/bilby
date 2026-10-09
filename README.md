@@ -12,6 +12,8 @@ When a file is exfiltrated using bilby, the file outputted by **BS** is compress
 
 Due to the lengthy mappings of characters used when translating bash commands to bilby-readable commands, bilby_cmd_interface can be used to input your bash command and have it automatically written to the hbt_command file used by **BS**. On account of this, bilby can be used without memorization of the character mappings; however, any custom mappings meant to further obfuscate communications between **BC** and **BS** must therefore be done by hand, and necessitate updating bilby_cmd_interface to ensure future translations remain accurate.
 
+Bilby is currently suited for use on Unix and Unix-like systems.
+
 ## File Exfiltration
 
 Here, a JPEG is exfiltrated: the first three bytes of the file -- FF D8 FF -- are prepared, wrapped, and sent to **BS**. Red denotes a wrapped value, while blue denotes an unwrapped value.
@@ -76,18 +78,16 @@ Sections are:
 
 Each section of the command is expected to hold certain values. This format must be followed for **BC** to function correctly. Due to the restrictions of characters allowed in DNS PTR responses, not all bash commands can be typed in the native format. For that reason, mappings between symbols and strings allow **BC** to interpret incoming bash commands correctly without forcing **BS** to send the native commands:
 
-{"80": "..", "79": ".", "78": "|", "77": ";", "76": "'", "75": ">", "74": "/"}
+{"..": "80", ".": "79", "|": "78", ";": "77", "'": "76", ">": "75", "/": "74", "-": "73"}
 
 For instance, we can send the command:	
 
-    cmd-bash-cd.80-77-ls
+    cmd-bash-cd.80-78-ls
 
-where 80 maps to '..', and 77 maps to ';'. The translated command here would be:
-
-    cd .. ; ls
+where 80 maps to '..', and 78 maps to ';'.
 
 If we want to echo "test" into a file, we would type:
 
-    cmd-bash-echo.76test76-7575-echotest79txt
+    cmd-bash-echo.76hello76-75-test79txt
 
 Note that the command is formatted as "...test79txt" rather than "...test.txt".
