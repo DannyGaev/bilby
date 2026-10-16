@@ -1,8 +1,10 @@
 # C2 Communication Via Reverse DNS Tunneling
 
-bilby exploits the same system necessity for DNS abused by conventional DNS tunneling, but encodes data into the IP addresses themselves. For example, when exfiltrating files, the bilby client (**BC**) will take each byte of the target file and add a baseline value to it (communicated to the receiving server in advance) prior to sending it to the bilby server (**BS**), where **BS** reverses the operation to recover the original bytes.
+bilby is a proof-of-concept C2/data exfiltrastion tool which exploits the same system necessity for DNS abused by conventional DNS tunneling, but encodes data into the IP addresses themselves. For example, when exfiltrating files, the bilby client (**BC**) will take each byte of the target file and add a baseline value to it (communicated to the receiving server in advance) prior to sending it to the bilby server (**BS**), where **BS** reverses the operation to recover the original bytes.
 
 Some bytes become invalid when the baseline is added, as the new value exceeds 255. When this occurs, the value is wrapped back around to a valid byte value, and **BC** marks the transformation with an even value at the index of the wrapped byte. In doing so, the first octet becomes a 'key' that **BS** can use to decode the received values correctly, adjusting byte values as needed.
+
+# Bilby is not intended for malicious use in real-world environments.
 
 ## Notes on Using Bilby
 
